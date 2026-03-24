@@ -1,13 +1,14 @@
+
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ConversationHandler, ContextTypes
 import database
 
-# معرف المالك (ضع معرفك هنا)
-ADMIN_ID = 6001517585 # استبدل برقم معرفك
-# يمكنك أيضاً استخدام كلمة مرور بدلاً من ذلك
-# ADMIN_PASSWORD = "secret"
+# التوكن ومعرف المالك (ضع التوكن الجديد هنا بعد التغيير)
+TOKEN = '8594021815:AAGnCeQlSpK3urvQVbzzMdJXYX73t7nD-K8'
+ADMIN_ID = 6001517585
 
+# إعداد التسجيل
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # حالات المحادثة الرئيسية
@@ -15,6 +16,7 @@ GOVERNORATE, NAME, SHOW_INFO = range(3)
 # حالة لانتظار رفع الملف من المالك
 WAITING_FOR_FILE = range(1)
 
+# قائمة محافظات العراق
 GOVERNORATES = [
     'بغداد', 'البصرة', 'نينوى', 'أربيل', 'السليمانية', 'دهوك',
     'كركوك', 'صلاح الدين', 'ديالى', 'الأنبار', 'بابل', 'واسط',
@@ -112,15 +114,16 @@ async def handle_csv_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"⚠️ حدث خطأ أثناء تحديث قاعدة البيانات:\n{str(e)}")
     return ConversationHandler.END
 
-async def cancel_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("تم إلغاء العملية.")
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("تم الإلغاء.")
     return ConversationHandler.END
 
 # ========== تشغيل البوت ==========
 def main():
-    TOKEN = 'YOUR_BOT_TOKEN'
-    database.init_db()  # تهيئة الجدول (بدون بيانات)
+    # تهيئة قاعدة البيانات
+    database.init_db()
 
+    # إنشاء التطبيق
     application = Application.builder().token(TOKEN).build()
 
     # محادثة المستخدم العادي
@@ -131,7 +134,7 @@ def main():
             NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, name_received)],
             SHOW_INFO: [CallbackQueryHandler(show_info_button, pattern='show_info')],
         },
-        fallbacks=[CommandHandler('cancel', cancel_admin)],
+        fallbacks=[CommandHandler('cancel', cancel)],
     )
 
     # محادثة المالك لرفع الملف
@@ -140,12 +143,13 @@ def main():
         states={
             WAITING_FOR_FILE: [MessageHandler(filters.Document.ALL, handle_csv_file)],
         },
-        fallbacks=[CommandHandler('cancel', cancel_admin)],
+        fallbacks=[CommandHandler('cancel', cancel)],
     )
 
     application.add_handler(user_conv)
     application.add_handler(admin_conv)
 
+    # تشغيل البوت
     application.run_polling()
 
 if __name__ == '__main__':
