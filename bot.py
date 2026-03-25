@@ -1,29 +1,28 @@
-
+import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ConversationHandler, ContextTypes
 import database
 
-# التوكن ومعرف المالك (ضع التوكن الجديد هنا بعد التغيير)
-TOKEN = '8594021815:AAGnCeQlSpK3urvQVbzzMdJXYX73t7nD-K8'
-ADMIN_ID = 6001517585
+# قراءة التوكن من متغيرات البيئة
+TOKEN = os.getenv('8776281606:AAHcEpn4O5g16tPVa9mDZEkSU1OHHqZmuv0')
+if not TOKEN:
+    raise ValueError("لم يتم تعيين BOT_TOKEN في متغيرات البيئة")
 
-# إعداد التسجيل
+ADMIN_ID = int(os.getenv('ADMIN_ID', '6001517585'))  # ضع معرفك الرقمي
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# حالات المحادثة الرئيسية
+# حالات المحادثة
 GOVERNORATE, NAME, SHOW_INFO = range(3)
-# حالة لانتظار رفع الملف من المالك
 WAITING_FOR_FILE = range(1)
 
-# قائمة محافظات العراق
 GOVERNORATES = [
     'بغداد', 'البصرة', 'نينوى', 'أربيل', 'السليمانية', 'دهوك',
     'كركوك', 'صلاح الدين', 'ديالى', 'الأنبار', 'بابل', 'واسط',
     'القادسية', 'المثنى', 'ذي قار', 'ميسان', 'النجف', 'كربلاء'
 ]
 
-# ========== دوال المستخدم العادي ==========
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(gov, callback_data=gov)] for gov in GOVERNORATES]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -76,9 +75,7 @@ async def show_info_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text('⚠️ لم تعد المعلومات متاحة. استخدم /start من فضلك.')
     return ConversationHandler.END
 
-# ========== دوال المالك ==========
 async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """أمر /admin للتحقق من هوية المالك"""
     user_id = update.effective_user.id
     if user_id != ADMIN_ID:
         await update.message.reply_text("⛔ ليس لديك صلاحية لاستخدام هذا الأمر.")
@@ -91,7 +88,6 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return WAITING_FOR_FILE
 
 async def handle_csv_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """معالجة الملف المرفوع (CSV)"""
     user_id = update.effective_user.id
     if user_id != ADMIN_ID:
         await update.message.reply_text("⛔ ليس لديك صلاحية.")
@@ -118,15 +114,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("تم الإلغاء.")
     return ConversationHandler.END
 
-# ========== تشغيل البوت ==========
 def main():
-    # تهيئة قاعدة البيانات
     database.init_db()
-
-    # إنشاء التطبيق
     application = Application.builder().token(TOKEN).build()
 
-    # محادثة المستخدم العادي
     user_conv = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -137,7 +128,6 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)],
     )
 
-    # محادثة المالك لرفع الملف
     admin_conv = ConversationHandler(
         entry_points=[CommandHandler('admin', admin_command)],
         states={
@@ -149,7 +139,6 @@ def main():
     application.add_handler(user_conv)
     application.add_handler(admin_conv)
 
-    # تشغيل البوت
     application.run_polling()
 
 if __name__ == '__main__':
