@@ -3,7 +3,6 @@ import csv
 import io
 
 def init_db():
-    """إنشاء قاعدة البيانات والجدول إذا لم يكن موجوداً"""
     conn = sqlite3.connect('unemployment.db')
     c = conn.cursor()
     c.execute('''
@@ -23,12 +22,9 @@ def init_db():
     conn.close()
 
 def update_from_csv(file_content: bytes):
-    """تحديث قاعدة البيانات من محتوى ملف CSV"""
     conn = sqlite3.connect('unemployment.db')
     c = conn.cursor()
-    # مسح الجدول الحالي
     c.execute('DELETE FROM persons')
-    # قراءة البيانات من المحتوى
     stream = io.StringIO(file_content.decode('utf-8'))
     reader = csv.DictReader(stream)
     for row in reader:
@@ -43,10 +39,9 @@ def update_from_csv(file_content: bytes):
         ))
     conn.commit()
     conn.close()
-    return reader.fieldnames  # إرجاع أسماء الأعمدة
+    return reader.fieldnames
 
 def get_person_info(governorate, name):
-    """البحث عن شخص بالاسم والمحافظة"""
     conn = sqlite3.connect('unemployment.db')
     c = conn.cursor()
     c.execute('''
@@ -56,4 +51,4 @@ def get_person_info(governorate, name):
     ''', (governorate, name))
     result = c.fetchone()
     conn.close()
-    return result  # (name, rate, age, job, emp_date, death_date, imprison_status)
+    return result
